@@ -21,7 +21,7 @@ test "encodes tabular arrays with a pipe delimiter" {
     try std.testing.expectEqualStrings(fixtures.pipe_delimiter_toon, actual);
 }
 
-test "normalizes unsupported floating point values to null" {
+test "rejects unsupported floating point values" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -32,9 +32,24 @@ test "normalizes unsupported floating point values to null" {
         },
     };
 
-    const actual = try ztoon.encodeAlloc(arena.allocator(), value, .{});
-    try std.testing.expectEqualStrings(
-        "negative_zero: null\ninfinity: null",
-        actual,
+    try std.testing.expectError(
+        error.UnsupportedFloatValue,
+        ztoon.encodeAlloc(arena.allocator(), value, .{}),
+    );
+}
+
+test "rejects unsupported key folding option" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const value = ztoon.Value{
+        .object = &.{
+            .{ .key = "name", .value = .{ .string = "Ada" } },
+        },
+    };
+
+    try std.testing.expectError(
+        error.UnsupportedKeyFolding,
+        ztoon.encodeAlloc(arena.allocator(), value, .{ .key_folding = true }),
     );
 }
